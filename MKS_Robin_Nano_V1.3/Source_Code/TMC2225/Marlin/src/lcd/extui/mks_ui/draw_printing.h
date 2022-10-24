@@ -33,7 +33,8 @@ enum {
   REPRINTING,
   REPRINTED,
   RESUMING,
-  STOP
+  STOP,
+  COMPLETED
 };
 
 void lv_draw_printing();
@@ -47,6 +48,9 @@ void reset_print_time();
 void start_print_time();
 void stop_print_time();
 void setProBarRate();
+void lv_do_pause();
+void lv_do_resume();
+void lv_do_reprint();
 
 #ifdef __cplusplus
   } /* C-declarations for C++ */

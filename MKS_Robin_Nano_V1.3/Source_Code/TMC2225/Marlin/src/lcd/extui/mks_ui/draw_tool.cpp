@@ -28,6 +28,7 @@
 #include <lv_conf.h>
 
 #include "../../../gcode/queue.h"
+#include "../../../gcode/gcode.h"
 #include "../../../module/temperature.h"
 #include "../../../inc/MarlinConfig.h"
 

@@ -110,7 +110,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
       break;
     case ID_P_TYPE:
       if (uiCfg.curTempType == 0) {
-        if (ENABLED(HAS_MULTI_EXTRUDER)) {
+        if (ENABLED(HAS_MULTI_EXTRUDER) && (DISABLED(SINGLENOZZLE))) {
           if (uiCfg.extruderIndex == 0) {
             uiCfg.extruderIndex = 1;
           }

@@ -67,6 +67,7 @@ void lv_show_gcode_output(void * that, const char * txt) {
     memcpy(public_buf + len, txt, tlen);
     public_buf[len + tlen] = '\n';
   }
+  lv_label_set_text  (outV,(char*)public_buf);
 }
 
 void lv_serial_capt_hook(void * userPointer, uint8_t c) {
@@ -95,12 +96,14 @@ void lv_draw_gcode(bool clear) {
   outV = lv_label_create(scr, PARA_UI_POS_X, PARA_UI_POS_Y * 3, (const char*)public_buf);
 
   lv_big_button_create(scr, "F:/bmp_back70x40.bin", common_menu.text_back, PARA_UI_BACK_POS_X + 10, PARA_UI_BACK_POS_Y, event_handler, ID_GCODE_RETURN, true);
+  MYSERIAL1.setHook(lv_serial_capt_hook, lv_eom_hook, 0);
 }
 
 void lv_clear_gcode() {
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) lv_group_remove_all_objs(g);
   #endif
+  MYSERIAL1.setHook();
   lv_obj_del(scr);
   outV = 0;
 }

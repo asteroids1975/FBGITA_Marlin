@@ -87,6 +87,11 @@ void lv_update_touch_calibration_screen() {
     str = calibration_stage == CALIBRATION_SUCCESS ? GET_TEXT(MSG_CALIBRATION_COMPLETED) : GET_TEXT(MSG_CALIBRATION_FAILED);
     touch_calibration.calibration_end();
     lv_big_button_create(scr, "F:/bmp_return.bin", common_menu.text_back, BTN_X_PIXEL * 3 + INTERVAL_V * 4, BTN_Y_PIXEL + INTERVAL_H + titleHeight, event_handler, ID_TC_RETURN);
+    send_str_to_wifi("; Touch calibration: ");
+    send_uint_to_wifi(" (%d,", touch_calibration.calibration.x);
+    send_uint_to_wifi("%d)", touch_calibration.calibration.y);
+    send_uint_to_wifi(" O(%d,", touch_calibration.calibration.offset_x);
+    send_uint_to_wifi("%d)\r\n", touch_calibration.calibration.offset_y);
   }
 
   // draw current message

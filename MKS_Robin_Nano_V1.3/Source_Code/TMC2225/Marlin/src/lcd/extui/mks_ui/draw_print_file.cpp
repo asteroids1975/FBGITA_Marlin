@@ -41,7 +41,7 @@ static lv_obj_t *buttonPageUp, *buttonPageDown, *buttonBack,
                 *buttonGcode[FILE_BTN_CNT], *labelPageUp[FILE_BTN_CNT], *buttonText[FILE_BTN_CNT];
 
 enum {
-  ID_P_UP = 7,
+  ID_P_UP = FILE_BTN_CNT + 1,
   ID_P_DOWN,
   ID_P_RETURN
 };
@@ -155,7 +155,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
       if (file_count < FILE_NUM)
         dir_offset[curDirLever].cur_page_last_offset = 0;
     }
-  }
+  }    
   else if (obj->mks_obj_id == ID_P_RETURN) {
     if (curDirLever > 0) {
       int8_t *ch = (int8_t *)strrchr(list_file.curDirPath, '/');
@@ -245,12 +245,42 @@ void lv_draw_print_file() {
   }
   */
 }
-static char test_public_buf_l[40];
+static char test_public_buf_l[256];
+//static char test_public_buf_l[(SHORT_NAME_LEN + 1) * MAX_DIR_LEVEL + strlen("S:/") + 1];
+#ifdef TFT35_LOREZ  
+  #define   FILE_BTN_COL_WIDTH  175
+  #define   FILE_BTN_ROW_HEIGHT 50
+#else
+  #define   FILE_BTN_COL_WIDTH  180 //BTN_X_PIXEL
+  #define   FILE_BTN_ROW_HEIGHT 65 //BTN_Y_PIXEL
+#endif
+//#define   FILE_BTN_COL1X    FILE_PRE_PIC_X_OFFSET + INTERVAL_V * (0 + 1) 
+//#define   FILE_BTN_COL2X    FILE_PRE_PIC_X_OFFSET + INTERVAL_V * (0 + 1) + 175
+//#define   FILE_BTN_ROWY     titleHeight + FILE_PRE_PIC_Y_OFFSET + INTERVAL_H * 0 + 50 * 0
+//#define   FILE_BTN_ROW2Y    FILE_PRE_PIC_X_OFFSET + INTERVAL_V * (0 + 1) + 175
+//#define   TFT35_LOREZ 
+
+
+static lv_coord_t fileButtPosX[]= {
+  INTERVAL_V * (0 + 1) + FILE_BTN_COL_WIDTH * 0,
+  INTERVAL_V * (1 + 1) + FILE_BTN_COL_WIDTH * 1,
+  INTERVAL_V * (2 + 1) + FILE_BTN_COL_WIDTH * 2
+};
+static lv_coord_t fileButtPosY[]= {
+  titleHeight + (INTERVAL_H + FILE_BTN_ROW_HEIGHT) * 0,
+  titleHeight + (INTERVAL_H + FILE_BTN_ROW_HEIGHT) * 1,
+  titleHeight + (INTERVAL_H + FILE_BTN_ROW_HEIGHT) * 2,
+  titleHeight + (INTERVAL_H + FILE_BTN_ROW_HEIGHT) * 3,
+  titleHeight + (INTERVAL_H + FILE_BTN_ROW_HEIGHT) * 4
+};
+
+
 void disp_gcode_icon(uint8_t file_num) {
   uint8_t i;
+  volatile  uint8_t r,c;
 
   // TODO: set current media title?!
-  scr = lv_screen_create(PRINT_FILE_UI, "");
+  scr = lv_screen_create(PRINT_FILE_UI, list_file.curDirPath/*""*/);  
 
   // Create image buttons
   buttonPageUp   = lv_imgbtn_create(scr, "F:/bmp_pageUp.bin", OTHER_BTN_XPIEL * 3 + INTERVAL_V * 4, titleHeight, event_handler, ID_P_UP);
@@ -271,29 +301,29 @@ void disp_gcode_icon(uint8_t file_num) {
     */
     if (i >= file_num) break;
 
-    #ifdef TFT35
-      buttonGcode[i] = lv_imgbtn_create(scr, nullptr);
+#ifndef TFT35_LOREZ
+      //column
+      c=i / (FILE_BTN_CNT/2);
+      //row
+      r=i % (FILE_BTN_CNT/2);
 
+      //Draw icon
+      buttonGcode[i] = lv_imgbtn_create(scr, nullptr);
       lv_imgbtn_use_label_style(buttonGcode[i]);
       lv_obj_clear_protect(buttonGcode[i], LV_PROTECT_FOLLOW);
       lv_btn_set_layout(buttonGcode[i], LV_LAYOUT_OFF);
 
-      ZERO(public_buf_m);
-      cutFileName((char *)list_file.long_name[i], 16, 8, (char *)public_buf_m);
-
       if (list_file.IsFolder[i]) {
         lv_obj_set_event_cb_mks(buttonGcode[i], event_handler, (i + 1), "", 0);
-        lv_imgbtn_set_src_both(buttonGcode[i], "F:/bmp_dir.bin");
-        if (i < 3)
-          lv_obj_set_pos(buttonGcode[i], BTN_X_PIXEL * i + INTERVAL_V * (i + 1), titleHeight);
-        else
-          lv_obj_set_pos(buttonGcode[i], BTN_X_PIXEL * (i - 3) + INTERVAL_V * ((i - 3) + 1), BTN_Y_PIXEL + INTERVAL_H + titleHeight);
+        lv_imgbtn_set_src_both(buttonGcode[i], "F:/bmp_dir_small.bin");
 
-        labelPageUp[i] = lv_label_create(buttonGcode[i], public_buf_m);
-        lv_obj_align(labelPageUp[i], buttonGcode[i], LV_ALIGN_IN_BOTTOM_MID, 0, -5);
+        lv_obj_set_pos(buttonGcode[i], fileButtPosX[c], fileButtPosY[r]); //BTN_X_PIXEL * i + INTERVAL_V * (i + 1), titleHeight);
+
+        //labelPageUp[i] = lv_label_create(buttonGcode[i], public_buf_m);
+        //lv_obj_align(labelPageUp[i], buttonGcode[i], LV_ALIGN_OUT_BOTTOM_MID, 0, -5);
       }
       else {
-        if (have_pre_pic((char *)list_file.file_name[i])) {
+        if (/*(sel_file==i) &&*/ have_pre_pic((char *)list_file.file_name[i])) {
 
           //lv_obj_set_event_cb_mks(buttonGcode[i], event_handler, (i + 1), list_file.file_name[i], 1);
 
@@ -301,54 +331,111 @@ void disp_gcode_icon(uint8_t file_num) {
           strcat(test_public_buf_l, list_file.file_name[i]);
           char *temp = strstr(test_public_buf_l, ".GCO");
           if (temp) strcpy(temp, ".bin");
+          //send_str_to_wifi("; filename=%s\r\n",test_public_buf_l);  
+                  
           lv_obj_set_event_cb_mks(buttonGcode[i], event_handler, (i + 1), test_public_buf_l, 0);
           lv_imgbtn_set_src_both(buttonGcode[i], buttonGcode[i]->mks_pic_name);
-          if (i < 3) {
-            lv_obj_set_pos(buttonGcode[i], BTN_X_PIXEL * i + INTERVAL_V * (i + 1) + FILE_PRE_PIC_X_OFFSET, titleHeight + FILE_PRE_PIC_Y_OFFSET);
-            buttonText[i] = lv_btn_create(scr, nullptr);
-            //lv_obj_set_event_cb(buttonText[i], event_handler);
-
-            lv_btn_use_label_style(buttonText[i]);
-            lv_obj_clear_protect(buttonText[i], LV_PROTECT_FOLLOW);
-            lv_btn_set_layout(buttonText[i], LV_LAYOUT_OFF);
-            //lv_obj_set_event_cb_mks(buttonText[i], event_handler,(i+10),"", 0);
-            lv_obj_set_pos(buttonText[i], BTN_X_PIXEL * i + INTERVAL_V * (i + 1) + FILE_PRE_PIC_X_OFFSET, titleHeight + FILE_PRE_PIC_Y_OFFSET + 100);
-            lv_obj_set_size(buttonText[i], 100, 40);
-          }
-          else {
-            lv_obj_set_pos(buttonGcode[i], BTN_X_PIXEL * (i - 3) + INTERVAL_V * ((i - 3) + 1) + FILE_PRE_PIC_X_OFFSET, BTN_Y_PIXEL + INTERVAL_H + titleHeight + FILE_PRE_PIC_Y_OFFSET);
-            buttonText[i] = lv_btn_create(scr, nullptr);
-            //lv_obj_set_event_cb(buttonText[i], event_handler);
-
-            lv_btn_use_label_style(buttonText[i]);
-            lv_obj_clear_protect(buttonText[i], LV_PROTECT_FOLLOW);
-            lv_btn_set_layout(buttonText[i], LV_LAYOUT_OFF);
-            //lv_obj_set_event_cb_mks(buttonText[i], event_handler,(i+10),"", 0);
-            lv_obj_set_pos(buttonText[i], BTN_X_PIXEL * (i - 3) + INTERVAL_V * ((i - 3) + 1) + FILE_PRE_PIC_X_OFFSET, BTN_Y_PIXEL + INTERVAL_H + titleHeight + FILE_PRE_PIC_Y_OFFSET + 100);
-            lv_obj_set_size(buttonText[i], 100, 40);
-          }
-          labelPageUp[i] = lv_label_create(buttonText[i], public_buf_m);
-          lv_obj_align(labelPageUp[i], buttonText[i], LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+          lv_obj_set_pos(buttonGcode[i], fileButtPosX[c] /*+ FILE_PRE_PIC_X_OFFSET */, fileButtPosY[r] /*+ FILE_PRE_PIC_Y_OFFSET*/ ); //BTN_X_PIXEL * i + INTERVAL_V * (i + 1) + FILE_PRE_PIC_X_OFFSET, titleHeight + FILE_PRE_PIC_Y_OFFSET);
         }
         else {
           lv_obj_set_event_cb_mks(buttonGcode[i], event_handler, (i + 1), "", 0);
-          lv_imgbtn_set_src_both(buttonGcode[i], "F:/bmp_file.bin");
-          if (i < 3)
-            lv_obj_set_pos(buttonGcode[i], BTN_X_PIXEL * i + INTERVAL_V * (i + 1), titleHeight);
-          else
-            lv_obj_set_pos(buttonGcode[i], BTN_X_PIXEL * (i - 3) + INTERVAL_V * ((i - 3) + 1), BTN_Y_PIXEL + INTERVAL_H + titleHeight);
-
-          labelPageUp[i] = lv_label_create(buttonGcode[i], public_buf_m);
-          lv_obj_align(labelPageUp[i], buttonGcode[i], LV_ALIGN_IN_BOTTOM_MID, 0, -5);
+          lv_imgbtn_set_src_both(buttonGcode[i], "F:/bmp_file_small.bin");
+          lv_obj_set_pos(buttonGcode[i], fileButtPosX[c], fileButtPosY[r]);
+          //labelPageUp[i] = lv_label_create(buttonGcode[i], public_buf_m);
+          //lv_obj_align(labelPageUp[i], buttonGcode[i], LV_ALIGN_OUT_BOTTOM_MID, 0, -5);
         }
-      }
+      }      
+      //Add main file button
+      buttonText[i] = lv_btn_create(scr, nullptr);
+      //lv_obj_set_event_cb(buttonText[i], event_handler);
+//      if (i==sel_file) {
+//        lv_btn_set_style(buttonText[i], LV_BTN_STYLE_REL, &style_btn_rel);
+//        lv_btn_set_style(buttonText[i], LV_BTN_STYLE_PR,  &style_btn_pr);            
+//      }
+//      else{
+        lv_btn_use_label_style(buttonText[i]);
+//      }
+      lv_obj_clear_protect(buttonText[i], LV_PROTECT_FOLLOW);
+      lv_btn_set_layout(buttonText[i], LV_LAYOUT_OFF);
+      lv_obj_set_event_cb_mks(buttonText[i], event_handler, (i + 1), "", 0);
+      lv_obj_set_pos(buttonText[i], fileButtPosX[c] + /*FILE_PRE_PIC_X_OFFSET*/ + 55, fileButtPosY[r] /*+ FILE_PRE_PIC_Y_OFFSET*/); //BTN_X_PIXEL * i + INTERVAL_V * (i + 1) + FILE_PRE_PIC_X_OFFSET, titleHeight + FILE_PRE_PIC_Y_OFFSET + 100);
+      lv_obj_set_size(buttonText[i], FILE_BTN_COL_WIDTH - 55, 40);
+      //Add label with filename      
+      ZERO(public_buf_m);
+      cutFileName((char *)list_file.long_name[i], 24, 12, (char *)public_buf_m);
+      labelPageUp[i] = lv_label_create(buttonText[i], public_buf_m);
+      lv_obj_align(labelPageUp[i], buttonText[i], LV_ALIGN_IN_LEFT_MID, 0, 0);
+
       #if HAS_ROTARY_ENCODER
         if (gCfgItems.encoder_enable) lv_group_add_obj(g, buttonGcode[i]);
       #endif
 
-    #else // !TFT35
+#else // !TFT35
+      //row
+      r=i % (FILE_BTN_CNT/2);
+      //column
+      c=i / (FILE_BTN_CNT/2);
+      //Draw icon
+      //buttonGcode[i] = lv_imgbtn_create(scr, nullptr);
+
+      //lv_imgbtn_use_label_style(buttonGcode[i]);
+      //lv_obj_clear_protect(buttonGcode[i], LV_PROTECT_FOLLOW);
+      //lv_btn_set_layout(buttonGcode[i], LV_LAYOUT_OFF);
+      //lv_obj_set_event_cb_mks(buttonGcode[i], event_handler, (i + 1), "", 0);
+      //lv_obj_set_pos(buttonGcode[i], fileButtPosX[c], fileButtPosY[r]);
+      //lv_obj_set_size(buttonGcode[i], 50, 50);
+
+      if (list_file.IsFolder[i]) {
+        //lv_imgbtn_set_src_both(buttonGcode[i], "F:/bmp_dir_small.bin");
+        buttonGcode[i] = lv_imgbtn_create(scr, "F:/bmp_dir_small.bin", fileButtPosX[c], fileButtPosY[r], event_handler, (i + 1));
+      }
+      else {
+/*        if (have_pre_pic((char *)list_file.file_name[i])) {
+          //lv_obj_set_event_cb_mks(buttonGcode[i], event_handler, (i + 1), list_file.file_name[i], 1);
+//          memset(test_public_buf_l, 0, sizeof(test_public_buf_l));
+//          memset(buttonGcode[i]->mks_pic_name, 0, sizeof(buttonGcode[i]->mks_pic_name));
+
+          strcpy(test_public_buf_l, "S:");
+          strcat(test_public_buf_l, list_file.file_name[i]);
+          char *temp = strstr(test_public_buf_l, ".GCO");
+          if (temp) strcpy(temp, ".bin");
+          //lv_obj_set_event_cb_mks(buttonGcode[i], event_handler, (i + 1), test_public_buf_l, 0);
+          //lv_imgbtn_set_src_both(buttonGcode[i], buttonGcode[i]->mks_pic_name);
+          buttonGcode[i] = lv_imgbtn_create(scr, test_public_buf_l , fileButtPosX[c], fileButtPosY[r], event_handler, (i + 1));
+        }
+        else {
+*/
+         //lv_imgbtn_set_src_both(buttonGcode[i], "F:/bmp_file_small.bin");
+         buttonGcode[i] = lv_imgbtn_create(scr, "F:/bmp_file_small.bin", fileButtPosX[c], fileButtPosY[r], event_handler, (i + 1));
+//         }
+      }
+      //Add main file button
+      buttonText[i] = lv_btn_create(scr, nullptr);
+      //lv_obj_set_event_cb(buttonText[i], event_handler);
+
+      //lv_btn_use_label_style(buttonText[i]);
+      lv_btn_set_style(buttonText[i], LV_BTN_STYLE_REL, &style_btn_rel);
+      lv_btn_set_style(buttonText[i], LV_BTN_STYLE_PR,  &style_btn_pr);
+      lv_obj_clear_protect(buttonText[i], LV_PROTECT_FOLLOW);
+      lv_btn_set_layout(buttonText[i], LV_LAYOUT_OFF);
+      lv_obj_set_event_cb_mks(buttonText[i], event_handler,(i + 1),"", 0);
+      lv_obj_set_pos(buttonText[i],fileButtPosX[c]+45, fileButtPosY[r]);
+      lv_obj_set_size(buttonText[i], 125, 45);
+
+      //Add label with filename
+      ZERO(public_buf_m);
+      cutFileName((char *)list_file.long_name[i], 24, 12, (char *)public_buf_m);
+      labelPageUp[i] = lv_label_create(buttonText[i], public_buf_m);
+      lv_obj_align(labelPageUp[i], buttonText[i], LV_ALIGN_IN_LEFT_MID, 5,0);
+
+
+      #if HAS_ROTARY_ENCODER
+        if (gCfgItems.encoder_enable) lv_group_add_obj(g, buttonGcode[i]);
+      #endif
+
+
     #endif // !TFT35
-  }
+  } // for (i)
   #if HAS_ROTARY_ENCODER
     if (gCfgItems.encoder_enable) {
       lv_group_add_obj(g, buttonPageUp);
@@ -373,6 +460,8 @@ uint32_t lv_open_gcode_file(char *path) {
     if (ps4) {
       pre_sread_cnt = (uintptr_t)ps4 - (uintptr_t)((uint32_t *)(&public_buf[0]));
       card.setIndex(pre_sread_cnt);
+      //send_str_to_wifi("; open_gcode: %s",cur_name);
+      //send_uint_to_wifi(" offset: %d \r\n",(uint32_t) pre_sread_cnt);
     }
     return pre_sread_cnt;
   #endif // SDSUPPORT
@@ -445,15 +534,15 @@ void lv_gcode_file_read(uint8_t *data_buf) {
         if (*p_index == 0x0000) *p_index = LV_COLOR_BACKGROUND.full;
       }
     #else // !HAS_TFT_LVGL_UI_SPI
-      for (i = 0; i < 200;) {
+      for (i = 0; i < PREVIEW_LITTLE_PIC_WIDTH*2;) {
         p_index = (uint16_t *)(&public_buf[i]);
         //Color = (*p_index >> 8);
         //*p_index = Color | ((*p_index & 0xFF) << 8);
         i += 2;
-        if (*p_index == 0x0000) *p_index = LV_COLOR_BACKGROUND.full; // 0x18C3;
+        if (*p_index == 0x0000) *p_index = LV_COLOR_BACKGROUND.full; // 0x18C3; //LV_COLOR_MAKE(0xFF,0x7F,0x7F).full;
       }
     #endif // !HAS_TFT_LVGL_UI_SPI
-    memcpy(data_buf, public_buf, 200);
+    memcpy(data_buf, public_buf, PREVIEW_LITTLE_PIC_WIDTH*2);
   #endif // SDSUPPORT
 }
 
@@ -463,6 +552,11 @@ void lv_gcode_file_seek(uint32_t pos) {
   card.setIndex(pos);
 }
 
+/// @brief Reduce filename length
+/// @param path 
+/// @param len 
+/// @param bytePerLine max 31 chars
+/// @param outStr 
 void cutFileName(char *path, int len, int bytePerLine, char *outStr) {
   #if _LFN_UNICODE
     TCHAR *tmpFile;
@@ -472,7 +566,7 @@ void cutFileName(char *path, int len, int bytePerLine, char *outStr) {
   #else
     char *tmpFile;
     char *strIndex1 = 0, *strIndex2 = 0, *beginIndex;
-    char secSeg[10] = {0};
+    char secSeg[32] = {0};
   #endif
 
   if (path == 0 || len <= 3 || outStr == 0) return;

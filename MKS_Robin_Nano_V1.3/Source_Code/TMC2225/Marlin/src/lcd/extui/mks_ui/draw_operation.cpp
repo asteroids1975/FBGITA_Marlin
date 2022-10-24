@@ -58,6 +58,18 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
       lv_draw_preHeat();
       break;
     case ID_O_EXTRUCT:
+      #if HAS_MULTI_EXTRUDER
+        uiCfg.extruderIndexBak = active_extruder;
+      #endif
+      if (uiCfg.print_state == WORKING) {
+        #if ENABLED(SDSUPPORT)
+          card.pauseSDPrint();
+          stop_print_time();
+          uiCfg.print_state = PAUSING;
+        #endif
+      }
+      uiCfg.moveSpeed_bak = (uint16_t)feedrate_mm_s;
+      uiCfg.hotendTargetTempBak = thermalManager.degTargetHotend(active_extruder);    
       lv_clear_operation();
       lv_draw_extrusion();
       break;

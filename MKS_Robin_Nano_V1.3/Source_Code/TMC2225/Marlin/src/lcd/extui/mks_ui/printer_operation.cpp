@@ -39,11 +39,23 @@
   #include "../../../feature/powerloss.h"
 #endif
 
+#if DISABLED(ADVANCED_PAUSE_FEATURE)
+  #define PAUSE_PARK_RETRACT_FEEDRATE         25  // (mm/s) Initial retract feedrate.
+  #define PAUSE_PARK_RETRACT_LENGTH          6.5  // (mm) Initial retract.
+//  #define PARK_HEAD_ON_PAUSE                    // Park the nozzle during pause and filament change.  
+#endif
+#if DISABLED(NOZZLE_PARK_FEATURE)
+//  #define NOZZLE_PARK_POINT { (X_MIN_POS + 5), (Y_MIN_POS + 5), 5 }
+  #define NOZZLE_PARK_XY_FEEDRATE 100   // (mm/s) X and Y axes feedrate (also used for delta Z axis)
+#endif
+
+
 extern uint32_t To_pre_view;
 extern bool flash_preview_begin, default_preview_flg, gcode_preview_over;
 
 void printer_state_polling() {
   char str_1[16];
+  char str_2[16];
   if (uiCfg.print_state == PAUSING) {
     #if ENABLED(SDSUPPORT)
       if (!planner.has_blocks_queued() && card.getIndex() > MIN_FILE_PRINTED)
@@ -59,17 +71,22 @@ void printer_state_polling() {
         uiCfg.current_x_position_bak = current_position.x;
         uiCfg.current_y_position_bak = current_position.y;
         uiCfg.current_z_position_bak = current_position.z;
+        uiCfg.current_e_position_bak = current_position.e;
+  #if ENABLED(PARK_HEAD_ON_PAUSE)        
+        sprintf_P(public_buf_m, PSTR("G92 E0\nG1 F%d E%s\n"),PAUSE_PARK_RETRACT_FEEDRATE*60,dtostrf(-PAUSE_PARK_RETRACT_LENGTH, 1, 3, str_1));
+        gcode.process_subcommands_now(public_buf_m);
 
         if (gCfgItems.pausePosZ != (float)-1) {
-          sprintf_P(public_buf_l, PSTR("G91\nG1 Z%s\nG90"), dtostrf(gCfgItems.pausePosZ, 1, 1, str_1));
-          gcode.process_subcommands_now(public_buf_l);
+          sprintf_P(public_buf_m, PSTR("G91\nG1 Z%s\nG90\n"), dtostrf(gCfgItems.pausePosZ, 1, 3, str_1));
+          gcode.process_subcommands_now(public_buf_m);
         }
         if (gCfgItems.pausePosX != (float)-1 && gCfgItems.pausePosY != (float)-1) {
-          sprintf_P(public_buf_l, PSTR("G1 X%s Y%s"), dtostrf(gCfgItems.pausePosX, 1, 1, str_1), dtostrf(gCfgItems.pausePosY, 1, 1, str_1));
-          gcode.process_subcommands_now(public_buf_l);
+          //sprintf_P(public_buf_l, PSTR("G1 X%s Y%s"), dtostrf(gCfgItems.pausePosX, 1, 1, str_1), dtostrf(gCfgItems.pausePosY, 1, 1, str_1));
+          sprintf_P(public_buf_m, PSTR("G1 F%d X%s Y%s\n"),NOZZLE_PARK_XY_FEEDRATE*60, dtostrf(gCfgItems.pausePosX, 1, 3, str_1), dtostrf(gCfgItems.pausePosY, 1, 3, str_2));
+          gcode.process_subcommands_now(public_buf_m);
         }
+  #endif
         uiCfg.print_state = PAUSED;
-        uiCfg.current_e_position_bak = current_position.e;
 
         gCfgItems.pause_reprint = true;
         update_spi_flash();
@@ -84,16 +101,35 @@ void printer_state_polling() {
 
   if (uiCfg.print_state == RESUMING) {
     if (IS_SD_PAUSED()) {
-      if (gCfgItems.pausePosX != (float)-1 && gCfgItems.pausePosY != (float)-1) {
-        sprintf_P(public_buf_m, PSTR("G1 X%s Y%s"), dtostrf(uiCfg.current_x_position_bak, 1, 1, str_1), dtostrf(uiCfg.current_y_position_bak, 1, 1, str_1));
+
+  #if ENABLED(PARK_HEAD_ON_PAUSE)      
+        //ZERO(public_buf_m);
+        if (gCfgItems.pausePosX != (float)-1 && gCfgItems.pausePosY != (float)-1) {
+          sprintf_P(public_buf_m, PSTR("G90"));
+          gcode.process_subcommands_now(public_buf_m);
+          sprintf_P(public_buf_m, PSTR("G1 F%d X%s Y%s\n"),NOZZLE_PARK_XY_FEEDRATE*60, dtostrf(uiCfg.current_x_position_bak, 1, 3, str_1), dtostrf(uiCfg.current_y_position_bak, 1, 3, str_2));
+          gcode.process_subcommands_now(public_buf_m);
+        }
+        if (gCfgItems.pausePosZ != (float)-1) {
+          sprintf_P(public_buf_m, PSTR("G1 F%d Z%s"), PAUSE_PARK_RETRACT_FEEDRATE*60, dtostrf(uiCfg.current_z_position_bak, 1, 3, str_1));
+          gcode.process_subcommands_now(public_buf_m);
+        }
+        sprintf_P(public_buf_m, PSTR("G92 E%s"), dtostrf(uiCfg.current_e_position_bak - PAUSE_PARK_RETRACT_LENGTH, 1, 5, str_1));
         gcode.process_subcommands_now(public_buf_m);
-      }
-      if (gCfgItems.pausePosZ != (float)-1) {
-        ZERO(public_buf_m);
-        sprintf_P(public_buf_m, PSTR("G1 Z%s"), dtostrf(uiCfg.current_z_position_bak, 1, 1, str_1));
+
+        sprintf_P(public_buf_m, PSTR("G1 F%d E%s"), PAUSE_PARK_RETRACT_FEEDRATE*60 ,dtostrf(uiCfg.current_e_position_bak, 1, 5, str_2));
         gcode.process_subcommands_now(public_buf_m);
-      }
+        planner.synchronize();        
+  #endif
+
       gcode.process_subcommands_now(FPSTR(M24_STR));
+        /*
+        if (card.isFileOpen()) {
+          card.startOrResumeFilePrinting();            // SD card will now be read for commands
+          startOrResumeJob();               // Start (or resume) the print job timer
+          TERN_(POWER_LOSS_RECOVERY, recovery.prepare());
+        }      
+        */
       uiCfg.print_state = WORKING;
       start_print_time();
 
@@ -103,6 +139,13 @@ void printer_state_polling() {
   }
   #if ENABLED(POWER_LOSS_RECOVERY)
     if (uiCfg.print_state == REPRINTED) {
+      send_str_to_wifi("; printer_state_polling: REPRINTING!\r\n");
+#if 0
+      #if HAS_HEATED_BED
+        const int16_t bt = recovery.info.target_temperature_bed;
+        sprintf_P(public_buf_m, PSTR("M140 S%i"), bt);
+        gcode.process_subcommands_now(public_buf_m);
+      #endif
       #if HAS_HOTEND
         HOTEND_LOOP() {
           const int16_t et = recovery.info.target_temperature[e];
@@ -116,6 +159,7 @@ void printer_state_polling() {
           }
         }
       #endif
+#endif
 
       recovery.resume();
       #if 0
@@ -197,6 +241,7 @@ void filament_check() {
       || fil_det_count_3 >= FIL_DELAY
     #endif
   ) {
+    send_str_to_wifi("; detected filament runout!\r\n");
     clear_cur_ui();
     card.pauseSDPrint();
     stop_print_time();

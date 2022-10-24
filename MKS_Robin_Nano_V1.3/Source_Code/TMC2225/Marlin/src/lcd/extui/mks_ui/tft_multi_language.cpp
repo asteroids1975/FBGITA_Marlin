@@ -2488,6 +2488,10 @@ void disp_language_init() {
           wifi_menu.title     = WIFI_NAME_TEXT_IT;
           wifi_menu.cloud     = CLOSE_TEXT_IT;
           wifi_menu.reconnect = WIFI_RECONNECT_TEXT_IT;
+          wifi_menu.state_ap     = WIFI_AP_TEXT_IT;
+          wifi_menu.state_sta    = WIFI_STA_TEXT_IT;
+          wifi_menu.connected    = WIFI_CONNECTED_TEXT_IT;
+          wifi_menu.disconnected = WIFI_DISCONNECTED_TEXT_IT;          
 
           cloud_menu.title        = TITLE_CLOUD_TEXT_IT;
           cloud_menu.bind         = CLOUD_BINDED_IT;

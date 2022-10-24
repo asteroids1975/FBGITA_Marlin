@@ -44,9 +44,13 @@
 #if ENABLED(DGUS_LCD_UI_MKS)
   #include "../../lcd/extui/dgus/DGUSDisplayDef.h"
 #endif
+#if ENABLED(HAS_TFT_LVGL_UI)
+  #include "../../lcd/extui/mks_ui/draw_printing.h"
+#endif
 
 #include "../../MarlinCore.h" // for startOrResumeJob
 
+extern "C" int send_str_to_wifi(const char * str, char* value=NULL);
 /**
  * M24: Start or Resume SD Print
  */
@@ -82,7 +86,8 @@ void GcodeSuite::M24() {
     TERN_(HOST_PROMPT_SUPPORT, hostui.prompt_open(PROMPT_INFO, F("Resuming SD"), FPSTR(DISMISS_STR)));
   #endif
 
-  ui.reset_status();
+  IF_DISABLED(DWIN_CREALITY_LCD, ui.reset_status());
+  TERN_(HAS_TFT_LVGL_UI, lv_do_resume());
 }
 
 /**
@@ -114,6 +119,8 @@ void GcodeSuite::M25() {
     TERN_(DGUS_LCD_UI_MKS, MKS_pause_print_move());
 
     IF_DISABLED(DWIN_CREALITY_LCD, ui.reset_status());
+    
+    TERN_(HAS_TFT_LVGL_UI, lv_do_pause());
 
     #if ENABLED(HOST_ACTION_COMMANDS)
       TERN_(HOST_PROMPT_SUPPORT, hostui.prompt_open(PROMPT_PAUSE_RESUME, F("Pause SD"), F("Resume")));

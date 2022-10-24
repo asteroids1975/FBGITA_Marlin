@@ -236,11 +236,23 @@ void my_disp_flush(lv_disp_drv_t * disp, const lv_area_t * area, lv_color_t * co
           height = area->y2 - area->y1 + 1;
 
   SPI_TFT.setWindow((uint16_t)area->x1, (uint16_t)area->y1, width, height);
+#if EITHER(USE_DMA_FSMC_TC_INT, USE_SPI_DMA_TC)
+  lcd_dma_trans_lock = true;
+  SPI_TFT.tftio.WriteSequenceIT((uint16_t*)color_p, width * height);
+#if ENABLED(USE_DMA_FSMC_TC_INT)
+    TFT_FSMC::DMAtx.XferCpltCallback = dma_tc;
+#endif
+#if ENABLED(USE_SPI_DMA_TC)
+  TFT_SPI::DMAtx.XferCpltCallback = dma_tc;
+#endif
 
-  SPI_TFT.tftio.WriteSequence((uint16_t*)color_p, width * height);
+#else
+  //SPI_TFT.tftio.WriteSequence((uint16_t*)color_p, width * height);
+  for (uint16_t i = 0; i < height; i++)
+    SPI_TFT.tftio.WriteSequence((uint16_t*)(color_p + width * i), width);
 
   lv_disp_flush_ready(disp); // Indicate you are ready with the flushing
-
+#endif
   W25QXX.init(SPI_QUARTER_SPEED);
 }
 
@@ -368,9 +380,11 @@ lv_fs_res_t spi_flash_tell_cb(lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p
 }
 
 // sd
+//extern int send_str_to_wifi(char * str,char* value);
 char *cur_namefff;
 uint32_t sd_read_base_addr = 0, sd_read_addr_offset = 0, small_image_size = 409;
 lv_fs_res_t sd_open_cb (lv_fs_drv_t * drv, void * file_p, const char * path, lv_fs_mode_t mode) {
+//  send_str_to_wifi("; sd_open_cb: %s",(char*)path);
   char name_buf[100];
   *name_buf = '/';
   strcpy(name_buf + 1, path);
@@ -382,8 +396,9 @@ lv_fs_res_t sd_open_cb (lv_fs_drv_t * drv, void * file_p, const char * path, lv_
   // find small image size
   card.read(public_buf, 512);
   public_buf[511] = '\0';
-  const char* eol = strpbrk((const char*)public_buf, "\n\r");
+  char* eol = strpbrk((const char*)public_buf, "\n\r");
   small_image_size = (uintptr_t)eol - (uintptr_t)((uint32_t *)(&public_buf[0])) + 1;
+//  send_uint_to_wifi(" - small_image_size= %d\r\n",small_image_size);
   return LV_FS_RES_OK;
 }
 
@@ -394,21 +409,23 @@ lv_fs_res_t sd_close_cb (lv_fs_drv_t * drv, void * file_p) {
 }
 
 lv_fs_res_t sd_read_cb (lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, uint32_t * br) {
-  if (btr == 200) {
+  if (btr == PREVIEW_LITTLE_PIC_WIDTH*2) {
     lv_gcode_file_read((uint8_t *)buf);
     //pic_read_addr_offset += 208;
-    *br = 200;
+    *br = PREVIEW_LITTLE_PIC_WIDTH*2;
   }
-  else if (btr == 4) {
-    uint8_t header_pic[4] = { 0x04, 0x90, 0x81, 0x0C };
-    memcpy(buf, header_pic, 4);
+  else if (btr == 4) {  // 4=sizeof(lv_img_header_t)
+//    uint8_t header_pic[4] = { 0x04, 0x90, 0x81, 0x0C }; //for 100x100 image
+//    memcpy(buf, header_pic, 4);
+    lv_img_header_t hdr = {4,0,0,PREVIEW_LITTLE_PIC_WIDTH,PREVIEW_LITTLE_PIC_WIDTH};
+    memcpy(buf, (uint8_t*) &hdr, 4);
     *br = 4;
   }
   return LV_FS_RES_OK;
 }
 
 lv_fs_res_t sd_seek_cb(lv_fs_drv_t * drv, void * file_p, uint32_t pos) {
-  sd_read_addr_offset = sd_read_base_addr + (pos - 4) / 200 * small_image_size;
+  sd_read_addr_offset = sd_read_base_addr + (pos - 4) / (2*PREVIEW_LITTLE_PIC_WIDTH) * small_image_size;
   lv_gcode_file_seek(sd_read_addr_offset);
   return LV_FS_RES_OK;
 }

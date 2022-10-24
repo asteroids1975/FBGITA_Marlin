@@ -29,6 +29,9 @@
 
 #include "../../../module/temperature.h"
 #include "../../../gcode/queue.h"
+#include "../../../gcode/gcode.h"
+#include "../../../module/motion.h"
+#include "../../../module/planner.h"
 #include "../../../inc/MarlinConfig.h"
 
 static lv_obj_t *scr;
@@ -106,6 +109,14 @@ static void event_handler(lv_obj_t *obj, lv_event_t event) {
       disp_ext_speed();
       break;
     case ID_E_RETURN:
+      #if HAS_MULTI_EXTRUDER
+        if (uiCfg.print_state != IDLE && uiCfg.print_state != REPRINTED)
+          gcode.process_subcommands_now(uiCfg.extruderIndexBak == 1 ? F("T1") : F("T0"));
+      #endif
+      feedrate_mm_s = (float)uiCfg.moveSpeed_bak;
+      if (uiCfg.print_state == PAUSED)
+        planner.set_e_position_mm((destination.e = current_position.e = uiCfg.current_e_position_bak));
+      thermalManager.setTargetHotend(uiCfg.hotendTargetTempBak, uiCfg.extruderIndex);    
       goto_previous_ui();
       break;
   }

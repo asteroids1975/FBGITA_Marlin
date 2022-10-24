@@ -245,6 +245,7 @@ void lv_draw_keyboard() {
 
   // Create a text area. The keyboard will write here
   lv_obj_t *ta = lv_ta_create(scr, nullptr);
+  lv_obj_set_size(ta, 400, 145);
   lv_obj_align(ta, nullptr, LV_ALIGN_IN_TOP_MID, 0, 10);
   switch (keyboard_value) {
     case autoLevelGcodeCommand:
