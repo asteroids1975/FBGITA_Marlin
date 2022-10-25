@@ -41,7 +41,7 @@ static lv_obj_t *buttonPageUp, *buttonPageDown, *buttonBack,
                 *buttonGcode[FILE_BTN_CNT], *labelPageUp[FILE_BTN_CNT], *buttonText[FILE_BTN_CNT];
 
 enum {
-  ID_P_UP = 7,
+  ID_P_UP = FILE_BTN_CNT + 1,
   ID_P_DOWN,
   ID_P_RETURN
 };
@@ -250,7 +250,7 @@ void disp_gcode_icon(uint8_t file_num) {
   uint8_t i;
 
   // TODO: set current media title?!
-  scr = lv_screen_create(PRINT_FILE_UI, "");
+  scr = lv_screen_create(PRINT_FILE_UI, list_file.curDirPath);
 
   // Create image buttons
   buttonPageUp   = lv_imgbtn_create(scr, "F:/bmp_pageUp.bin", OTHER_BTN_XPIEL * 3 + INTERVAL_V * 4, titleHeight, event_handler, ID_P_UP);
@@ -445,7 +445,7 @@ void lv_gcode_file_read(uint8_t *data_buf) {
         if (*p_index == 0x0000) *p_index = LV_COLOR_BACKGROUND.full;
       }
     #else // !HAS_TFT_LVGL_UI_SPI
-      for (i = 0; i < 200;) {
+      for (i = 0; i < PREVIEW_LITTLE_PIC_WIDTH*2;) {
         p_index = (uint16_t *)(&public_buf[i]);
         //Color = (*p_index >> 8);
         //*p_index = Color | ((*p_index & 0xFF) << 8);
@@ -453,7 +453,7 @@ void lv_gcode_file_read(uint8_t *data_buf) {
         if (*p_index == 0x0000) *p_index = LV_COLOR_BACKGROUND.full; // 0x18C3;
       }
     #endif // !HAS_TFT_LVGL_UI_SPI
-    memcpy(data_buf, public_buf, 200);
+    memcpy(data_buf, public_buf, PREVIEW_LITTLE_PIC_WIDTH*2);
   #endif // SDSUPPORT
 }
 
@@ -472,7 +472,7 @@ void cutFileName(char *path, int len, int bytePerLine, char *outStr) {
   #else
     char *tmpFile;
     char *strIndex1 = 0, *strIndex2 = 0, *beginIndex;
-    char secSeg[10] = {0};
+    char secSeg[32] = {0};
   #endif
 
   if (path == 0 || len <= 3 || outStr == 0) return;

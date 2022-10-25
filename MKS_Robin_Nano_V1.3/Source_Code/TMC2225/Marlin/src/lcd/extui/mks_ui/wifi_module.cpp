@@ -703,7 +703,54 @@ int package_to_wifi(WIFI_RET_TYPE type, uint8_t *buf, int len) {
 
 
 #define SEND_OK_TO_WIFI send_to_wifi((uint8_t *)"ok\r\n", strlen("ok\r\n"))
+#define SEND_OK_TO_WIFI_REM(rem)  send_to_wifi((uint8_t *)("ok ; " rem "\r\n"), strlen("ok ; " rem "\r\n"))
 int send_to_wifi(uint8_t *buf, int len) { return package_to_wifi(WIFI_TRANS_INF, buf, len); }
+int send_uint_to_wifi(const char * str,uint32_t value){
+  char row[80]={0};  
+  sprintf(row,str,value);
+  return package_to_wifi(WIFI_TRANS_INF, (uint8_t*)row, strlen(row));
+}
+int send_uint_to_wifi(const char * str,uint8_t value){
+  char row[80]={0};  
+  sprintf(row,str,value);
+  return package_to_wifi(WIFI_TRANS_INF, (uint8_t*)row, strlen(row));
+}
+int send_str_to_wifi(const char * str,char* value){
+  if (value==NULL)
+    return package_to_wifi(WIFI_TRANS_INF, (uint8_t*)str, strlen(str));
+
+  char row[80]={0};  
+  sprintf(row,str,value);
+  return package_to_wifi(WIFI_TRANS_INF, (uint8_t*)row, strlen(row));
+}
+
+
+
+int dump_to_wifi(uint8_t *buf, int len) {
+  char row[80];
+  char * dst1;
+  char * dst2;
+  uint8_t * src1=buf;
+  strncat(row," ",79);
+  strcpy(row,"; Dump ");
+  dst1=row+strlen(row);
+  dst2=dst1+3*len;
+  *dst2++=' ';*dst2++=' ';
+  for (int i=0;i<len;i++){
+    uint8_t digit=((*src1)>>4) & 0x0F;
+    *dst1++=(digit<10) ? '0'+digit : 'A'+digit-10;
+    digit=(*src1) & 0x0F;
+    *dst1++=(digit<10) ? '0'+digit : 'A'+digit-10;
+    *dst1++=' ';
+    if ((*(src1)>=32) && (*(src1)<127))
+      *(dst2++)=(char)*src1;
+    else
+      *(dst2++)='.';
+    src1++;    
+    }
+  strcpy(dst2,"\r\n");
+  return package_to_wifi(WIFI_TRANS_INF, (uint8_t*)row, strlen(row));
+}
 
 void set_cur_file_sys(int fileType) { gCfgItems.fileSysType = fileType; }
 
@@ -1068,7 +1115,7 @@ static void wifi_gcode_exec(uint8_t *cmd_line) {
         case 27:
           // Report print rate
           if ((uiCfg.print_state == WORKING) || (uiCfg.print_state == PAUSED)|| (uiCfg.print_state == REPRINTING)) {
-            print_rate = uiCfg.totalSend;
+            print_rate = uiCfg.print_progress;
             ZERO(tempBuf);
             sprintf_P((char *)tempBuf, PSTR("M27 %d\r\n"), print_rate);
             send_to_wifi((uint8_t *)tempBuf, strlen((char *)tempBuf));

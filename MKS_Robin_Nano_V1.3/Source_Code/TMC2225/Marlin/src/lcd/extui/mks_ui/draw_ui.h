@@ -28,7 +28,7 @@
 
 // the colors of the last MKS Ui
 #undef LV_COLOR_BACKGROUND
-#define LV_COLOR_BACKGROUND LV_COLOR_MAKE(0x1A, 0x1A, 0x1A)
+#define LV_COLOR_BACKGROUND LV_COLOR_MAKE(0x10, 0x20, 0x31)//LV_COLOR_MAKE(0x1A, 0x1A, 0x1A)
 
 #define TFT_LV_PARA_BACK_BODY_COLOR  LV_COLOR_MAKE(0x4A, 0x52, 0xFF)
 
@@ -131,8 +131,12 @@
   #define FILE_PRE_PIC_X_OFFSET 8
   #define FILE_PRE_PIC_Y_OFFSET 0
 
-  #define PREVIEW_LITTLE_PIC_SIZE  40910  // 400*100+9*101+1
-  #define PREVIEW_SIZE      202720        // (PREVIEW_LITTLE_PIC_SIZE+800*200+201*9+1)
+  //gcode preview as per mkswifi plugin
+  #define PREVIEW_LITTLE_PIC_WIDTH  50
+  #define PREVIEW_PIC_WIDTH  200
+
+  #define PREVIEW_LITTLE_PIC_SIZE  4*PREVIEW_LITTLE_PIC_WIDTH*PREVIEW_LITTLE_PIC_WIDTH+9*(PREVIEW_LITTLE_PIC_WIDTH+1)+1  //40910  // 400*100+9*101+1
+  #define PREVIEW_SIZE      PREVIEW_LITTLE_PIC_SIZE + 4*PREVIEW_PIC_WIDTH*PREVIEW_PIC_WIDTH+9*(PREVIEW_PIC_WIDTH+1)+1 //202720        // (PREVIEW_LITTLE_PIC_SIZE+800*200+201*9+1)
 
   // machine parameter ui
   #define PARA_UI_POS_X             10
@@ -206,7 +210,7 @@ typedef struct {
   celsius_t filament_limit_temp;
   float     pausePosX, pausePosY, pausePosZ;
   uint32_t  curFilesize;
-} CFG_ITMES;
+} CFG_ITEMS;
 
 typedef struct UI_Config_Struct {
   uint8_t curTempType:1,
@@ -235,9 +239,9 @@ typedef struct UI_Config_Struct {
                            eStepMax = 10;
   // Extruder speed (mm/s)
   uint8_t extruSpeed;
-  static constexpr uint8_t eSpeedH =  1,
+  static constexpr uint8_t eSpeedH = 20,
                            eSpeedN = 10,
-                           eSpeedL = 20;
+                           eSpeedL =  1;
   uint8_t print_state;
   uint8_t stepPrintSpeed;
   uint8_t waitEndMoves;
@@ -247,7 +251,7 @@ typedef struct UI_Config_Struct {
   uint16_t moveSpeed;
   uint16_t cloud_port;
   uint16_t moveSpeed_bak;
-  uint32_t totalSend;
+  uint32_t print_progress;
   uint32_t filament_loading_time,
            filament_unloading_time,
            filament_loading_time_cnt,
@@ -427,7 +431,7 @@ typedef enum {
 } keyboard_value_state;
 extern keyboard_value_state keyboard_value;
 
-extern CFG_ITMES gCfgItems;
+extern CFG_ITEMS gCfgItems;
 extern UI_CFG uiCfg;
 extern DISP_STATE disp_state;
 extern DISP_STATE last_disp_state;

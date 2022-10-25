@@ -56,7 +56,7 @@
   #include "mks_hardware.h"
 #endif
 
-CFG_ITMES gCfgItems;
+CFG_ITEMS gCfgItems;
 UI_CFG uiCfg;
 DISP_STATE_STACK disp_state_stack;
 DISP_STATE disp_state = MAIN_UI;
@@ -422,7 +422,7 @@ void tft_style_init() {
   style_btn_pr.text.font         = &TERN(HAS_SPI_FLASH_FONT, gb2312_puhui32, lv_font_roboto_22);
 
   lv_style_copy(&lv_bar_style_indic, &lv_style_pretty_color);
-  lv_bar_style_indic.text.color        = lv_color_hex3(0xADF);
+  lv_bar_style_indic.text.color        = LV_COLOR_BACKGROUND; //lv_color_hex3(0xADF);
   lv_bar_style_indic.image.color       = lv_color_hex3(0xADF);
   lv_bar_style_indic.line.color        = lv_color_hex3(0xADF);
   lv_bar_style_indic.body.main_color   = lv_color_hex3(0xADF);
