@@ -91,7 +91,7 @@ void lv_draw_more() {
 
   const bool enc_ena = TERN0(HAS_ROTARY_ENCODER, gCfgItems.encoder_enable);
 
-  lv_obj_t *buttonGCode = lv_imgbtn_create(scr, "F:/bmp_machine_para.bin", INTERVAL_V, titleHeight, event_handler, ID_GCODE);
+  lv_obj_t *buttonGCode = lv_imgbtn_create(scr, "F:/bmp_gcode.bin", INTERVAL_V, titleHeight, event_handler, ID_GCODE);
   if (enc_ena) lv_group_add_obj(g, buttonGCode);
   lv_obj_t *labelGCode = lv_label_create_empty(buttonGCode);
 

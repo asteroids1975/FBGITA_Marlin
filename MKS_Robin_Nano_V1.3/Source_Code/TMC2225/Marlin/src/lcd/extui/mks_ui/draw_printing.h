@@ -33,7 +33,8 @@ enum {
   REPRINTING,
   REPRINTED,
   RESUMING,
-  STOP
+  STOP,
+  COMPLETED
 };
 
 void lv_draw_printing();

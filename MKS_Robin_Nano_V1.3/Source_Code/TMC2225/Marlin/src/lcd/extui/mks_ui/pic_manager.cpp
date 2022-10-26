@@ -56,6 +56,7 @@ static FSTR_P const assets[] = {
   F("bmp_leveling.bin"),
   F("bmp_filamentchange.bin"),
   F("bmp_more.bin"),
+  F("bmp_gcode.bin"),
 
   // Fan screen
   F("bmp_Add.bin"),
@@ -89,6 +90,8 @@ static FSTR_P const assets[] = {
   F("bmp_back.bin"), // TODO: why two back buttons? Why not just one? (return / back)
   F("bmp_dir.bin"),
   F("bmp_file.bin"),
+  F("bmp_dir_small.bin"),
+  F("bmp_file_small.bin"),
 
   // Move motor screen
   // TODO: 6 equal icons, just in diffenct rotation... it may be optimized too
@@ -194,6 +197,7 @@ static FSTR_P const assets[] = {
     // Wifi screen
     F("bmp_wifi.bin"),
     F("bmp_cloud.bin"),
+    F("bmp_reconnect.bin"),    
   #endif
 
   #if ENABLED(MULTI_VOLUME)

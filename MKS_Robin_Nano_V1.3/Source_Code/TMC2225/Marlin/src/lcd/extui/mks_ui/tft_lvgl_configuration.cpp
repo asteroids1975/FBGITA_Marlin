@@ -439,28 +439,30 @@ lv_fs_res_t sd_close_cb (lv_fs_drv_t * drv, void * file_p) {
 }
 
 lv_fs_res_t sd_read_cb (lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, uint32_t * br) {
-  if (btr == 200) {
+  if (btr == PREVIEW_LITTLE_PIC_WIDTH*2) {
     lv_gcode_file_read((uint8_t *)buf);
     //pic_read_addr_offset += 208;
-    *br = 200;
+    *br = PREVIEW_LITTLE_PIC_WIDTH*2;
   }
   else if (btr == 4) {
-    uint8_t header_pic[4] = { 0x04, 0x90, 0x81, 0x0C };
-    memcpy(buf, header_pic, 4);
+    //uint8_t header_pic[4] = { 0x04, 0x90, 0x81, 0x0C };
+    //memcpy(buf, header_pic, 4);
+    lv_img_header_t hdr = {4,0,0,PREVIEW_LITTLE_PIC_WIDTH,PREVIEW_LITTLE_PIC_WIDTH};
+    memcpy(buf, (uint8_t*) &hdr, 4);
     *br = 4;
   }
   return LV_FS_RES_OK;
 }
 
 lv_fs_res_t sd_seek_cb(lv_fs_drv_t * drv, void * file_p, uint32_t pos) {
-  sd_read_addr_offset = sd_read_base_addr + (pos - 4) / 200 * small_image_size;
+  sd_read_addr_offset = sd_read_base_addr + (pos - 4) / (2*PREVIEW_LITTLE_PIC_WIDTH) * small_image_size;
   lv_gcode_file_seek(sd_read_addr_offset);
   return LV_FS_RES_OK;
 }
 
 lv_fs_res_t sd_tell_cb(lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p) {
   if (sd_read_addr_offset) *pos_p = 0;
-  else *pos_p = (sd_read_addr_offset - sd_read_base_addr) / small_image_size * 200 + 4;
+  else *pos_p = (sd_read_addr_offset - sd_read_base_addr) / small_image_size * (2*PREVIEW_LITTLE_PIC_WIDTH) + 4;
   return LV_FS_RES_OK;
 }
 
