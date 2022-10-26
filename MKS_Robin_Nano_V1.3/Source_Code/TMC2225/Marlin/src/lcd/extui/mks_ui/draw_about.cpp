@@ -31,7 +31,7 @@
 
 extern lv_group_t *g;
 static lv_obj_t *scr;
-static lv_obj_t *fw_type, *board, *author, *build;
+static lv_obj_t *fw_type, *board, *author, *build,*fw_name;
 
 enum { ID_A_RETURN = 1 };
 
@@ -54,11 +54,14 @@ void lv_draw_about() {
   board = lv_label_create(scr, "Board: " BOARD_INFO_NAME);
   lv_obj_align(board, nullptr, LV_ALIGN_CENTER, 0, -60);
 
-  author = lv_label_create(scr, "Author: " STRING_CONFIG_H_AUTHOR);
+  author = lv_label_create(scr, "Author: Clayblock");
   lv_obj_align(author, nullptr, LV_ALIGN_CENTER, 0, -100);
 
   build = lv_label_create(scr, "Build: " __DATE__ " " __TIME__);
   lv_obj_align(build, nullptr, LV_ALIGN_CENTER, 0, 30);
+
+  fw_name = lv_label_create(scr, "Firmware: TMC2225");
+  lv_obj_align(fw_name, nullptr, LV_ALIGN_CENTER, 0, 10);
 }
 
 void lv_clear_about() {
